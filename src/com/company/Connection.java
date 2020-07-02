@@ -1,14 +1,18 @@
 package com.company;
 
+import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 public class Connection extends Thread{
 
+    public static final byte SEPARATOR = (byte) 0x03;	//En ascii : Fin de texte
     private static final int TIMEOUT = 2000;	//2s to Time out
     private static final int SIZE = 1024;	    //Send/Receive suffer size
 
@@ -19,12 +23,15 @@ public class Connection extends Thread{
     private final InputStream in;
     private final OutputStream out;
 
+    private boolean quit;
+
     public Connection(Socket sock) throws IOException, UnknownHostException {
         this.ip = sock.getInetAddress().getHostAddress();
         this.port = sock.getPort();
         this.sock = sock;
         this.out = sock.getOutputStream();
         this.in = sock.getInputStream();
+        quit = false;
     }
 
     @Override
@@ -53,7 +60,7 @@ public class Connection extends Thread{
     public void closeOutput() {
         try {
             sock.shutdownOutput(); //On ferme UNIQUEMENT le flux de sortie (Envoie d'un FIN)
-            //quit = true;
+            quit = true;
         } catch (IOException ex) {
             System.err.println("Le flux de sortie est déjà fermé !");
         }
@@ -66,17 +73,39 @@ public class Connection extends Thread{
             int n = in.read(data);
             if (n != -1) {
                 //Message.receive(this, data);	//Traitement des données reçus
-                closeOutput();
+                System.out.println(new String(data));
+                System.out.println(showText(retrieveData(data)));
             } else {	//End of file, un FIN vient d'être envoyé par le client
                 sock.shutdownInput();	//Ferme le flux d'entrée, met fin au Thread
-                /*if (!quit) {
+                if (!quit) {
                     closeOutput();
-                }*/
+                }
             }
         } catch (IOException ex) {
             System.err.println("Impossible de lire les données reçus !");
             closeOutput();
         }
+    }
+
+    private String showText(ArrayList<String> list){
+        String sentence = "";
+        for(String string : list){
+            sentence += string;
+        }
+        return sentence;
+    }
+
+    public static ArrayList<String> retrieveData(byte[] data) {
+        ArrayList<String> strData = new ArrayList<>();
+        for (int i = 1, j = 0; i < data.length; i++, j++) {
+            if (data[i] == SEPARATOR) {
+                strData.add(new String(data, i - j, j));
+                j = 0;
+                i++;
+            }
+        }
+        System.out.println("lenght = " + strData.size());
+        return strData;
     }
 
     public static void newConnection(Socket soc) {
