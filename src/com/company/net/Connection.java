@@ -1,10 +1,8 @@
-package com.company;
+package com.company.net;
 
-import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -14,7 +12,7 @@ public class Connection extends Thread{
 
     public static final byte SEPARATOR = (byte) 0x03;	//En ascii : Fin de texte
     private static final int TIMEOUT = 2000;	//2s to Time out
-    private static final int SIZE = 1024;	    //Send/Receive suffer size
+    private static final int SIZE = 10/*24*/;	    //Send/Receive suffer size
 
     //Fields
     private final String ip;
@@ -73,8 +71,9 @@ public class Connection extends Thread{
             int n = in.read(data);
             if (n != -1) {
                 //Message.receive(this, data);	//Traitement des données reçus
+                //System.out.println(Arrays.toString(data));
                 System.out.println(new String(data));
-                System.out.println(showText(retrieveData(data)));
+                send(new String(data));
             } else {	//End of file, un FIN vient d'être envoyé par le client
                 sock.shutdownInput();	//Ferme le flux d'entrée, met fin au Thread
                 if (!quit) {
@@ -83,6 +82,15 @@ public class Connection extends Thread{
             }
         } catch (IOException ex) {
             System.err.println("Impossible de lire les données reçus !");
+            closeOutput();
+        }
+    }
+
+    public void send(String m) {
+        try {
+            out.write(m.getBytes());
+        } catch (IOException ex) {
+            System.err.println("Impossible d'envoyer le message !");
             closeOutput();
         }
     }

@@ -1,5 +1,7 @@
 package com.company;
 
+import com.company.net.Connection;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
